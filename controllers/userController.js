@@ -133,8 +133,7 @@ exports.parseFile = function (req, res) {
                                 stream.on('finish', function () {
                                     console.log('Store file!');
                                     c.end()
-                                    parse(fs.createReadStream(serverFilePath), customer, feedProvider, res);
-                                    return {downloaded: true};
+                                    return parse(fs.createReadStream(serverFilePath), customer, feedProvider, res);
                                 })
 
                                 stream.once('close', function () {
@@ -229,7 +228,7 @@ function parse(destinationFile, customer, feedProvider, res) {
 
     console.log('TRYING TO PARSE')
 
-    papa.parse(destinationFile, {
+    return papa.parse(destinationFile, {
         header: true,
         dynamicTyping: true,
         step: function (row) {
@@ -282,7 +281,7 @@ function parse(destinationFile, customer, feedProvider, res) {
 
                     await console.log("DEALERSHIP_ID: " + dealershipId + ", VIN AND ID: " + vehicle.id);
 
-                    return await admin.firestore().collection('products-test')
+                    return await admin.firestore().collection('products')
                         .where('dealershipId', '==', dealershipId)
                         .where('vin', '==', vehicle.id)
                         .where('lastUpdate', '>=', cutOffDate)
@@ -318,7 +317,7 @@ function parse(destinationFile, customer, feedProvider, res) {
 
                                 console.log("VEHICLE: ", vehicle.id, vehicle.model);
 
-                                await admin.firestore().collection('products-test')
+                                await admin.firestore().collection('products')
                                     .doc(vehicle.id)
                                     .set(vehicle, {merge: true})
                                     .then(props => {
@@ -345,7 +344,7 @@ function parse(destinationFile, customer, feedProvider, res) {
                 }
             })
 
-            await Promise.all(promises).then(() => {
+            return await Promise.all(promises).then(() => {
                 console.log('After promises - Parsing data: ', counter)
                 console.log('results', results)
 
