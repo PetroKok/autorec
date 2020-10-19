@@ -1,0 +1,21 @@
+{
+  "name": "autorecon-node",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "nodemon ./bin/www"
+  },
+  "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "dotenv": "^8.2.0",
+    "express": "~4.16.1",
+    "firebase-admin": "^9.2.0",
+    "ftp": "^0.3.10",
+    "gaxios": "^3.2.0",
+    "moment": "^2.29.1",
+    "morgan": "~1.9.1",
+    "nodemon": "^2.0.4",
+    "papaparse": "^5.3.0"
+  }
+}
