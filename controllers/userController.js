@@ -29,6 +29,14 @@ exports.toggleUserAccess = function (req, res) {
 }
 
 exports.parseFile = function (req, res) {
+    res.setHeader('Access-Control-Allow-Origin', 'http://autorecon.dev.oyihost.com');
+
+    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+
+    // Request headers you wish to allow
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+
     const dealer_id = req.params.user_id;
     let customer = {};
     return admin.firestore().collection('dealerships')
