@@ -229,8 +229,9 @@ function parse(destinationFile, customer, feedProvider, res) {
         fail: 0,
     }
 
-    let {accountId, dealershipName, feedProviderConfigId} = customer;
-    const {defaultConfig, config} = feedProvider;
+    let {feedId, accountId, dealershipName, feedProviderConfigId} = customer;
+    const {defaultConfig, config,} = feedProvider;
+    const needFeedId = feedProvider.feedId;
     const selectedConfigId = feedProviderConfigId || defaultConfig;
     const {feedIdMap, productMap, papaConfig, imageSplitter} = config[selectedConfigId];
 
@@ -256,9 +257,7 @@ function parse(destinationFile, customer, feedProvider, res) {
 
             const promises = await items.map(async (item, index) => {
                 const dealershipId = customer.id;
-
-                if (item[feedIdMap.feedId] !== null) {
-                    // if (item[feedIdMap.feedId].toString() === feedId) { // TODO: Why we need this??? It's from old parser
+                if ((needFeedId === true && item[feedIdMap.feedId].toString() === feedId) || needFeedId === false) {
                     const vehicle = {
                         accountId,
                         dealershipId,
