@@ -10,6 +10,7 @@ router.get('/:user_id/parse', userController.parseFile);
 
 router.get('/test', function (req, res) {
     console.log('STARTED GOOD!');
+    res.json({status: 'ok'});
 });
 
 module.exports = router;
