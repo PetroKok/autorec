@@ -108,7 +108,7 @@ exports.parseFile = function (req, res) {
                         data = data[dealer_id];
                         if (data.length !== 0 && data.feedFileName === feedFileName) {
                             console.log('Parsing process already running!');
-                            return res.json({downloaded: true, message: 'Parsing process already running!'});
+                            return res.json({running: true, message: 'Parsing process already running!'});
                         }
                     } else {
                         await admin.firestore().collection('dealer_parser').doc().set({
@@ -175,7 +175,7 @@ exports.parseFile = function (req, res) {
         .catch((error) => {
             console.log(error);
             deleteProcess(customer, feedProvider);
-            return res.json({dealership: 'Dealership not found!'});
+            return res.json({dealership: true, message: 'Dealership not found!'});
         });
 }
 
