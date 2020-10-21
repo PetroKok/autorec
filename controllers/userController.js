@@ -39,6 +39,8 @@ exports.parseFile = function (req, res) {
 
     const dealer_id = req.params.user_id;
     let customer = {};
+    let feedProvider = {};
+
     return admin.firestore().collection('dealerships')
         .where('id', '==', dealer_id).limit(1).get()
         .then(async dealer => {
@@ -60,9 +62,10 @@ exports.parseFile = function (req, res) {
         })
         .then(feedProviderSnapShot => {
 
-            const feedProvider = feedProviderSnapShot.data()
+            feedProvider = feedProviderSnapShot.data()
 
             const feedFileName = feedProvider.credentials.filename
+            const needFeedId = feedProvider.feedId;
 
             let dslFolder = feedProvider.credentials.folder
             let serverFilePath = dslFolder + feedFileName
@@ -72,6 +75,15 @@ exports.parseFile = function (req, res) {
                 user: feedProvider.credentials.username,
                 password: feedProvider.credentials.password,
                 port: feedProvider.credentials.port || 21,
+            }
+
+            if (needFeedId === true && (
+                customer.feedId === undefined ||
+                customer.feedId === null ||
+                customer.feedId === ''
+            )) {
+                console.log({feedId: true, message: 'Dealer must provide dealer id!'})
+                return res.json({feedId: true, message: 'Dealer must provide dealer id!'});
             }
 
             var file = storage.file('feeds/' + 'dealertrend.csv');
@@ -111,7 +123,8 @@ exports.parseFile = function (req, res) {
                 })
                 .catch(err => {
                     console.log(err);
-                    return res.json({downloaded: false, message: 'Internal Error with dealer_parser', error: err});
+                    deleteProcess(customer, feedProvider);
+                    return res.json({dealer_parser: true, message: 'Internal Error with dealer_parser', error: err});
                 })
 
             function downloadFeed() {
@@ -161,7 +174,8 @@ exports.parseFile = function (req, res) {
         })
         .catch((error) => {
             console.log(error);
-            return res.json({test: 'Not found', error: error});
+            deleteProcess(customer, feedProvider);
+            return res.json({dealership: 'Dealership not found!'});
         });
 }
 
@@ -343,6 +357,7 @@ function parse(destinationFile, customer, feedProvider, res) {
                         })
                         .catch(error => {
                             counter.fail++
+                            deleteProcess(customer, feedProvider);
                             return res.json({
                                 message: 'Error getting previous customer product: ' + vehicle.id,
                                 error: error
@@ -365,25 +380,7 @@ function parse(destinationFile, customer, feedProvider, res) {
                         console.log('Could not set document.');
                     })
 
-                admin.firestore().collection('dealer_parser')
-                    .where('dealership_id', '==', customer.id)
-                    .where('feedFileName', '==', feedProvider.credentials.filename)
-                    .where('finished', '==', false)
-                    .get()
-                    .then(dealer_off => {
-                        dealer_off.forEach(snapShot => {
-                            let data = snapShot.data();
-                            data.finished = true;
-                            data.notify_admin = true;
-                            data.notify_client = true;
-                            console.log('SET NOTIFICATION')
-                            snapShot.ref.set(data);
-                        });
-                    })
-                    .catch(err => {
-                        console.log('err');
-                        console.log(err);
-                    })
+                deleteProcess(customer, feedProvider);
 
                 return res.json({
                     status: true
@@ -392,7 +389,25 @@ function parse(destinationFile, customer, feedProvider, res) {
         },
         error: function (error) {
             console.log('Papa Parse Error: ', error)
+            deleteProcess(customer, feedProvider);
         },
         ...papaConfig
     })
+}
+
+function deleteProcess(customer, feedProvider) {
+    admin.firestore().collection('dealer_parser')
+        .where('dealership_id', '==', customer.id)
+        .where('feedFileName', '==', feedProvider.credentials.filename)
+        .where('finished', '==', false)
+        .get()
+        .then(dealer_off => {
+            dealer_off.forEach(snapShot => {
+                snapShot.ref.delete();
+            });
+        })
+        .catch(err => {
+            console.log('err');
+            console.log(err);
+        })
 }
