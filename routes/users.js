@@ -2,19 +2,15 @@ var express = require('express');
 var router = express.Router();
 
 const userController = require('../controllers/userController')
+const serviceController = require('../controllers/serviceController')
 
 /* GET users listing. */
 router.get('/:user_id/toggle-access', userController.toggleUserAccess);
 
 router.get('/:user_id/parse', userController.parseFile);
 
-router.get('/test', function (req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+router.get('/parse_queue', userController.parseForQueue);
 
-    console.log('STARTED GOOD!');
-    res.json({status: 'ok'});
-});
+router.get('/service', serviceController.parseAllDealers);
 
 module.exports = router;
