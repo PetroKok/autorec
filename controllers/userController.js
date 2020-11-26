@@ -54,16 +54,24 @@ exports.parseForQueue = function async(req, res) {
                 snapShot.ref.delete();
             })
 
+            // dealership_id
+            // return !!customer.feedProviderId && customer.feedFileName.trim() !== '' && customer.feedFileName.trim() !== undefined;
+
             const promises = await data.map(async dealership_id => {
                 console.log('$$$ >>> ', dealership_id);
-                var res = await getDealershipBy(dealership_id, res, true)
-                await console.log('FOR: ' + dealership_id)
-                await console.log(res)
+                var dealership = await Db.ref('dealerships').doc(dealership_id).get()
+                DL = await dealership.data();
+
+                if (!!DL.feedProviderId && DL.feedFileName.trim() !== '' && DL.feedFileName.trim() !== undefined) {
+                    var res = await getDealershipBy(dealership_id, res, true)
+                    // await console.log('FOR: ' + dealership_id)
+                    // await console.log(res)
+                } else {
+                    console.log('feedProviderId or/and feedFileName are not provided!');
+                }
+
             })
-
             await Promise.all(promises)
-
-
         })
         .catch((error) => {
             console.log(error);
@@ -74,21 +82,20 @@ exports.parseForQueue = function async(req, res) {
 
 exports.delete = function (res, req) {
 
-    // const userCreatedDaysDecider = -1;
-    // const userCreatedCutOffDate = moment().add(userCreatedDaysDecider, 'days').toDate()
-
-    // Db.ref('products')
-    //     .where('dealershipId', '==', 'Petro | 2020-11-25T18:52:43+02:00')
-    //     .where('lastUpdate', '>', userCreatedCutOffDate)
-    //     .get()
-    //     .then(async items => {
-    //         let data = [];
-    //         console.log(items.size)
-    //         await items.forEach(snapShot => {
-    //             const item = snapShot.data()
-                // data.push(item.id);
+    const userCreatedDaysDecider = -1;
+    const userCreatedCutOffDate = moment().add(userCreatedDaysDecider, 'days').toDate()
+    //
+    Db.ref('products')
+        .where('dealershipId', '==', 'Petro Dealership | 2020-11-26T12:15:51+02:00')
+        .where('lastUpdate', '>', userCreatedCutOffDate)
+        .get()
+        .then(async items => {
+            let data = [];
+            console.log(items.size)
+            await items.forEach(snapShot => {
+                const item = snapShot.data()
                 // snapShot.ref.delete();
-            // })
-            // console.log(data.length);
-        // })
+            })
+            console.log(data.length);
+        })
 }

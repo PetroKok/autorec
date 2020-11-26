@@ -32,7 +32,9 @@ function getCustomerList() {
 }
 
 function filterBeforeUpdatingInventory(customers) {
-    return customers.filter(customer => !!customer.feedProviderId && !!customer.feedFileName)
+    return customers.filter(customer => {
+        return !!customer.feedProviderId && customer.feedFileName.trim() !== '' && customer.feedFileName.trim() !== undefined;
+    })
 }
 
 async function updateInventory(customerIds, res) {

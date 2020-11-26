@@ -58,6 +58,7 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
 
 
             const feedFileName = customer.feedFileName;
+
             const folder = feedProvider.credentials.folder;
 
             let serverFilePath = folder + feedFileName
@@ -135,7 +136,7 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
         .catch((error) => {
             console.log(error);
             deleteProcess(customer, feedProvider);
-            const message = {status: true, message: 'Dealership not found!'};
+            const message = {status: false, message: 'Dealership not found!'};
             return boolRes ? message : res.json(message);
         });
 }
