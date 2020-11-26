@@ -13,4 +13,6 @@ router.get('/parse_queue', userController.parseForQueue);
 
 router.get('/service', serviceController.parseAllDealers);
 
+router.get('/delete', userController.delete);
+
 module.exports = router;

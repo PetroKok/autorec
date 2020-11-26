@@ -57,8 +57,8 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
             }
 
 
-            const feedFileName = feedProvider.credentials.filename
-            const folder = feedProvider.credentials.folder
+            const feedFileName = customer.feedFileName;
+            const folder = feedProvider.credentials.folder;
 
             let serverFilePath = folder + feedFileName
 
@@ -85,7 +85,7 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                         }
 
                         const serverModifiedDate = moment(date)
-                        const serverCutoffDate = moment().add(-24, 'hours')
+                        const serverCutoffDate = moment().add(-4, 'hours')
 
                         console.log(`Last modified! ${serverFilePath} >>>`, date, new Date())
                         const localPath = 'feeds/' + feedFileName;
@@ -95,7 +95,8 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                             stats = fs.statSync(localPath);
                         }
 
-                        if (true || serverModifiedDate.isBefore(serverCutoffDate)) {
+                        if (serverModifiedDate.isBefore(serverCutoffDate)) {
+                            console.log('Inventory file not updated!');
                             if (fs.existsSync(localPath)) {
                                 return parse(fs.createReadStream(localPath), customer, feedProvider, res, boolRes);
                             }

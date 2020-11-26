@@ -1,6 +1,7 @@
 const {admin, Db} = require('../firebase/firebase');
 const {getDealershipBy} = require('./parseController')
 const _ = require('lodash');
+const moment = require('moment');
 
 exports.toggleUserAccess = function (req, res) {
     const user_id = req.params.user_id;
@@ -27,28 +28,18 @@ exports.toggleUserAccess = function (req, res) {
 }
 
 exports.parseFile = function (req, res) {
-    res.setHeader('Access-Control-Allow-Origin', 'http://autorecon.dev.oyihost.com');
-
-    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');
-
-    // Request headers you wish to allow
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
 
     const dealership_id = req.params.user_id;
-    let customer = {};
-    let feedProvider = {};
 
     return getDealershipBy(dealership_id, res);
 }
 
 exports.parseForQueue = function async(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', 'http://autorecon.dev.oyihost.com');
-
-    // Request methods you wish to allow
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');
-
-    // Request headers you wish to allow
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
 
     res.send({started: true});
@@ -79,4 +70,25 @@ exports.parseForQueue = function async(req, res) {
         });
 
 
+}
+
+exports.delete = function (res, req) {
+
+    // const userCreatedDaysDecider = -1;
+    // const userCreatedCutOffDate = moment().add(userCreatedDaysDecider, 'days').toDate()
+
+    // Db.ref('products')
+    //     .where('dealershipId', '==', 'Petro | 2020-11-25T18:52:43+02:00')
+    //     .where('lastUpdate', '>', userCreatedCutOffDate)
+    //     .get()
+    //     .then(async items => {
+    //         let data = [];
+    //         console.log(items.size)
+    //         await items.forEach(snapShot => {
+    //             const item = snapShot.data()
+                // data.push(item.id);
+                // snapShot.ref.delete();
+            // })
+            // console.log(data.length);
+        // })
 }
