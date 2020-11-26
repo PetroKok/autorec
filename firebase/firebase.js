@@ -6,7 +6,6 @@ const firebase = firebase_admin.initializeApp({
         authDomain: process.env.AUTHDOMAIN,
         databaseURL: process.env.DATABASEURL,
         project_id: process.env.PROJECTID,
-        storageBucket: process.env.STORAGEBUCKET,
         messagingSenderId: process.env.MESSAGINGSENDERID,
         type: process.env.TYPE,
         private_key_id: process.env.PRIVATE_KEY_ID,
@@ -22,9 +21,6 @@ const firebase = firebase_admin.initializeApp({
 });
 const admin = firebase;
 exports.admin = firebase;
-
-
-exports.storage = firebase.storage().bucket('stationz-c5b0b');
 
 class Db {
     static async updateDoc(collection, doc, info) {
