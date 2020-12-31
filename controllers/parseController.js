@@ -4,7 +4,20 @@ const moment = require('moment');
 const papa = require('papaparse');
 const fs = require('fs');
 
+const FAIL = 'fail';
+const SUCCESS = 'success';
+
 exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
+    var results = {
+        customer: null,
+        newProducts: 0,
+        updated: 0,
+        skipped: 0,
+        duplicates: 0,
+        status: 'fail',
+        message: ''
+    }
+
     let customer = {};
     let feedProvider = {};
 
@@ -33,6 +46,8 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                     status: false,
                     message: 'Feed provider or credentials for feed provider is not provided!'
                 };
+
+                setLog(customer, results, FAIL, message.message)
                 return boolRes ? message : res.json(message);
             }
 
@@ -45,14 +60,16 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                     status: false,
                     message: 'Config is not correct!'
                 };
+                setLog(customer, results, FAIL, message.message)
                 return boolRes ? message : res.json(message);
             }
 
 
             const needFeedId = feedProvider.feedId;
             if (needFeedId && (customer.feedId === undefined || customer.feedId === null || customer.feedId === '')) {
-                console.log({feedId: true, message: 'Dealer must provide dealer id!'})
-                const message = {status: true, message: 'Dealer must provide dealer id!'};
+                console.log('Dealer must provide dealer id!')
+                const message = {status: false, message: 'Dealer must provide dealer id!'};
+                setLog(customer, results, FAIL, message.message)
                 return boolRes ? message : res.json(message);
             }
 
@@ -82,6 +99,7 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                         if (err && err.code === 550) {
                             console.log('File not exists on FTP!')
                             const message = {status: false, message: 'File not exists on FTP!', e: err};
+                            setLog(customer, results, FAIL, message.message)
                             return boolRes ? message : res.json(message);
                         }
 
@@ -91,17 +109,13 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                         console.log(`Last modified! ${serverFilePath} >>>`, date, new Date())
                         const localPath = 'feeds/' + feedFileName;
 
-                        var stats;
-                        if (fs.existsSync(localPath)) {
-                            stats = fs.statSync(localPath);
-                        }
-
                         if (serverModifiedDate.isBefore(serverCutoffDate)) {
                             console.log('Inventory file not updated!');
                             if (fs.existsSync(localPath)) {
-                                return parse(fs.createReadStream(localPath), customer, feedProvider, res, boolRes);
+                                return parse(fs.createReadStream(localPath), customer, feedProvider, res, results, boolRes);
                             }
                             const message = {status: false, message: 'Inventory file not updated!', e: err};
+                            setLog(customer, results, FAIL, message.message)
                             return boolRes ? message : res.json(message);
                         } else {
                             c.get(serverFilePath, function (err, stream) {
@@ -113,7 +127,7 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                                 stream.on('finish', function () {
                                     console.log('Store file!');
                                     c.end()
-                                    return parse(fs.createReadStream(localPath), customer, feedProvider, res, boolRes);
+                                    return parse(fs.createReadStream(localPath), customer, feedProvider, res, results, boolRes);
                                 })
 
                                 stream.once('close', function () {
@@ -122,7 +136,12 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
                                 stream.on('error', function (err) {
                                     console.log('Stream error!', err)
                                     deleteProcess(customer, feedProvider);
-                                    const message = {status: true, message: 'Inventory file not updated!', e: err};
+                                    const message = {
+                                        status: true,
+                                        message: 'Inventory file not uploaded, some error with FTP or stream!',
+                                        e: err
+                                    };
+                                    setLog(customer, results, FAIL, message.message)
                                     return boolRes ? message : res.json(message);
                                 })
                             })
@@ -137,11 +156,12 @@ exports.getDealershipBy = function (dealer_id, res, boolRes = false) {
             console.log(error);
             deleteProcess(customer, feedProvider);
             const message = {status: false, message: 'Dealership not found!'};
+            setLog(customer, results, FAIL, message.message)
             return boolRes ? message : res.json(message);
         });
 }
 
-function parse(destinationFile, customer, feedProvider, res, boolRes) {
+function parse(destinationFile, customer, feedProvider, res, results, boolRes) {
     const productPropsTypes = {
         number: 'number',
         date: 'date',
@@ -171,13 +191,7 @@ function parse(destinationFile, customer, feedProvider, res, boolRes) {
 
     let skipCompleteDecider = true
 
-    const results = {
-        customer: customer.id,
-        newProducts: 0,
-        updated: 0,
-        skipped: 0,
-        duplicates: 0
-    }
+    results.customer = customer.id;
 
     let daysDecider = -15
 
@@ -302,7 +316,6 @@ function parse(destinationFile, customer, feedProvider, res, boolRes) {
                                     .doc(vehicle.id)
                                     .set(vehicle, {merge: true})
                                     .then(props => {
-                                        console.log('Updated Product: ', vehicle.id)
                                         counter.success++
                                     })
                                     .catch(error => {
@@ -324,6 +337,7 @@ function parse(destinationFile, customer, feedProvider, res, boolRes) {
                                 message: 'Error getting previous customer product: ' + vehicle.id,
                                 error: error
                             };
+                            setLog(customer, results, FAIL, message.message)
                             return boolRes ? message : res.json(message);
                         })
                 }
@@ -331,18 +345,7 @@ function parse(destinationFile, customer, feedProvider, res, boolRes) {
 
             return await Promise.all(promises).then(() => {
                 console.log('After promises - Parsing data: ', counter)
-                console.log('results', results)
-
-                const now = moment().toDate();
-                admin.firestore().collection('logs').doc(customer.id + '|' + now).set({
-                    ...results,
-                    dealershipId: customer.id,
-                    createdDate: now
-                })
-                    .catch(err => {
-                        console.log('Could not set document.');
-                    })
-
+                setLog(customer, results, SUCCESS)
                 deleteProcess(customer, feedProvider);
 
                 const message = {
@@ -353,10 +356,45 @@ function parse(destinationFile, customer, feedProvider, res, boolRes) {
         },
         error: function (error) {
             console.log('Papa Parse Error: ', error)
+            setLog(customer, results, FAIL, 'Error with parsing data. File is not correct or structure of file for parsing. Please check if the structure is correct or contact to admin.')
             deleteProcess(customer, feedProvider);
         },
         ...papaConfig
     })
+}
+
+function setLog(customer, results, status = SUCCESS, message = '') {
+    const now = moment().toDate();
+
+    var finishedInfo = results;
+
+    finishedInfo.status = status;
+    finishedInfo.message = message;
+    finishedInfo.customer = customer.id;
+
+    const rawData = {...finishedInfo, dealershipId: customer.id, createdDate: now};
+
+    const documentPath = customer.id + '|' + now;
+
+    admin.firestore()
+        .collection('logs')
+        .doc(documentPath)
+        .set(rawData)
+        .then(() => {
+            console.log('results', rawData)
+            results = {
+                customer: null,
+                newProducts: 0,
+                updated: 0,
+                skipped: 0,
+                duplicates: 0,
+                status: 'fail',
+                message: ''
+            }
+        })
+        .catch(err => {
+            console.log('Could not set document.');
+        })
 }
 
 function deleteProcess(customer, feedProvider) {

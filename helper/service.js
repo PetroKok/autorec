@@ -5,19 +5,19 @@ const {Dealership, Product} = require('../models')
 const {Db, admin} = require('../firebase/firebase')
 const {getDealershipBy} = require('../controllers/parseController')
 const moment = require('moment')
+const _ = require('lodash')
 
 const service = function (res) {
-    const data = {
-        customers: [],
-    }
-    const updateInventoryData = {}
-
     getCustomerList()
         .then(async customers => {
-            data.customers = customers
-            updateInventoryData.list = await filterBeforeUpdatingInventory(Object.values(customers))
-            const result = await updateInventory(updateInventoryData.list.map((customer => customer.id)), res)
-            if(result && result.status === true){
+            console.log(_.map(customers, (item) => {
+                return {id: item.id, feedProviderId: item.feedProviderId}
+            }));
+
+            const inventoryData = await filterBeforeUpdatingInventory(Object.values(customers))
+            const result = await updateInventory(inventoryData.map((customer => customer.id)), res)
+
+            if (result && result.status === true) {
                 console.log(result)
             }
         })
@@ -25,7 +25,7 @@ const service = function (res) {
 }
 
 function getCustomerList() {
-    return Dealership.ref().get()
+    return Dealership.ref().where('active', '==', true).get()
         .then(querySnapshot => {
             return Db.getDataFromQuerySnapshot(querySnapshot)
         })
@@ -33,7 +33,7 @@ function getCustomerList() {
 
 function filterBeforeUpdatingInventory(customers) {
     return customers.filter(customer => {
-        return !!customer.feedProviderId && customer.feedFileName.trim() !== '' && customer.feedFileName.trim() !== undefined;
+        return !!customer.feedProviderId && customer.feedFileName && customer.feedFileName.trim() !== '' && customer.feedFileName.trim() !== undefined;
     })
 }
 
